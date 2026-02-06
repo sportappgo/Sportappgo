@@ -2,7 +2,7 @@
 <html lang="hu">
 <head>
 <meta charset="UTF-8">
-<title>Sport App</title>
+<title>Sportfogadás Demo</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body {margin:0;padding:0;font-family:'Orbitron',sans-serif;background:#0a0a0a;color:#fff;}
@@ -80,7 +80,6 @@ button.user-action{padding:5px 8px;margin:2px;border-radius:5px;border:none;back
 </div>
 
 <script>
-// -------- REG/LOGIN --------
 let currentUser=null;
 function sanitize(str){return str.trim();}
 
@@ -101,9 +100,6 @@ document.getElementById("btn-register").addEventListener("click",()=>{
   const userData={email,password,role,banned:false};
   localStorage.setItem(`user_${username}`,JSON.stringify(userData));
   document.getElementById("auth-message").innerText=`Köszönjük, hogy minket választottál, ${username}! Most jelentkezz be.`;
-  document.getElementById("reg-username").value="";
-  document.getElementById("reg-email").value="";
-  document.getElementById("reg-password").value="";
 });
 
 document.getElementById("btn-login").addEventListener("click",()=>{
@@ -130,13 +126,11 @@ document.getElementById("btn-login").addEventListener("click",()=>{
   document.getElementById("auth-message").innerText="Hibás felhasználónév vagy jelszó!";
 });
 
-// -------- MENÜ --------
 function showSection(section){
   const sections=['sport','game','bets','about','admin'];
   sections.forEach(s=>{document.getElementById(s).style.display=(s===section)?'block':'none';});
 }
 
-// -------- ADMIN --------
 function renderUsers(){
   const list=document.getElementById("user-list");
   list.innerHTML="";
@@ -172,37 +166,38 @@ function deleteUser(username){
   renderUsers();
 }
 
-// -------- API HÍVÁS --------
 async function loadTodayMatches(){
+  const matchesDiv=document.getElementById("matches");
+  matchesDiv.innerHTML="Betöltés...";
   try{
-    const res = await fetch('/api/matches/today');
-    const data = await res.json();
-    const matchesDiv=document.getElementById("matches");
+    const res=await fetch('/api/matches/today');
+    const events=await res.json();
     matchesDiv.innerHTML="";
-    data.forEach(ev=>{
+    events.forEach(ev=>{
       const div=document.createElement("div");
       div.className="match";
-      div.innerHTML=`${ev.teams.home.name} vs ${ev.teams.away.name} - ${new Date(ev.fixture.date).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
+      div.innerHTML=`${ev.teams.home.name} vs ${ev.teams.away.name} - ${ev.fixture.date.substring(11,16)}`;
       div.onclick=()=>{document.getElementById("detail").innerHTML=`<b>${ev.teams.home.name} vs ${ev.teams.away.name}</b><br>League: ${ev.league.name}<br>Date: ${ev.fixture.date}`;}
       matchesDiv.appendChild(div);
     });
-  }catch(e){document.getElementById("matches").innerHTML="<p>Hiba a meccsek betöltésénél.</p>";}
+  }catch(e){matchesDiv.innerHTML="<p>Hiba a meccsek betöltésénél.</p>";}
 }
 
 async function loadLiveMatches(){
+  const liveDiv=document.getElementById("live-matches");
+  liveDiv.innerHTML="Betöltés...";
   try{
-    const res = await fetch('/api/matches/live');
-    const data = await res.json();
-    const liveDiv=document.getElementById("live-matches");
+    const res=await fetch('/api/matches/live');
+    const events=await res.json();
     liveDiv.innerHTML="";
-    data.forEach(ev=>{
+    events.forEach(ev=>{
       const div=document.createElement("div");
       div.className="live-match";
-      div.innerHTML=`<span class="live">ELŐ</span> ${ev.teams.home.name} vs ${ev.teams.away.name} - ${new Date(ev.fixture.date).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
+      div.innerHTML=`<span class="live">ELŐ</span> ${ev.teams.home.name} vs ${ev.teams.away.name} - ${ev.fixture.date.substring(11,16)}`;
       div.onclick=()=>{document.getElementById("detail-live").innerHTML=`<b>${ev.teams.home.name} vs ${ev.teams.away.name}</b><br>League: ${ev.league.name}<br>Date: ${ev.fixture.date}`;}
       liveDiv.appendChild(div);
     });
-  }catch(e){document.getElementById("live-matches").innerHTML="<p>Hiba az elő meccsek betöltésénél.</p>";}
+  }catch(e){liveDiv.innerHTML="<p>Hiba az elő meccsek betöltésénél.</p>";}
 }
 </script>
 </body>
