@@ -1,5 +1,4 @@
 const express = require('express');
-const fetch = require('node-fetch');
 const cors = require('cors');
 
 const app = express();
@@ -7,8 +6,7 @@ app.use(cors());
 app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
-
-const API_KEY = process.env.API_KEY; // Render ENV
+const API_KEY = process.env.API_KEY;
 const API_URL = 'https://v3.football.api-sports.io/fixtures';
 
 app.get('/api/matches/today', async (req, res) => {
