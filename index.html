@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<title>Sport App</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body {margin:0;padding:0;font-family:'Orbitron',sans-serif;background:#0a0a0a;color:#fff;}
+header {display:flex;justify-content:center;align-items:center;background:#111;padding:10px 0;flex-wrap:wrap;box-shadow:0 0 15px #0ff,0 0 20px #f0f inset;}
+header button {margin:0 10px;padding:10px 15px;border:none;border-radius:10px;background:linear-gradient(90deg,#ff0,#f00);color:#000;font-weight:bold;cursor:pointer;transition:0.3s;}
+header button:hover {transform:scale(1.05);box-shadow:0 0 15px #ff0,0 0 20px #f00;}
+#admin-menu {display:none;background:red;color:white;padding:10px 15px;border-radius:10px;font-weight:bold;cursor:pointer;transition:0.3s;}
+#admin-menu:hover {transform:scale(1.05);box-shadow:0 0 15px #ff0,0 0 20px #f00;}
+.container {width:90%;max-width:600px;margin:20px auto;padding:20px;background:rgba(0,0,0,0.85);border-radius:12px;box-shadow:0 0 20px #00ff6a;text-align:center;}
+input[type=text], input[type=email], input[type=password], input[type=number] {width:100%;padding:12px;margin:8px 0;border:none;border-radius:8px;background:#111;color:#0f0;font-weight:bold;text-shadow:0 0 2px #0f0;font-size:16px;}
+button.action {width:100%;padding:12px;margin-top:10px;border:none;border-radius:10px;font-weight:bold;font-size:16px;cursor:pointer;transition:0.3s;background:linear-gradient(90deg,#ff0,#f00);color:#000;}
+button.action:hover {transform:scale(1.05);box-shadow:0 0 15px #ff0,0 0 20px #f00;}
+#auth-message {margin-top:10px;color:#ff0;font-weight:bold;}
+.match, .live-match {background: linear-gradient(135deg,#001f3f,#004080);padding:10px;margin-bottom:8px;border-radius:10px;cursor:pointer;}
+.match:hover, .live-match:hover {box-shadow:0 0 15px #0ff,0 0 20px #f0f;}
+.live {color:#ff0033;font-weight:bold;animation:blink 1s infinite;}
+@keyframes blink {0%,50%,100%{opacity:1;}25%,75%{opacity:0.3;}}
+section {display:none;margin-top:20px;text-align:left;}
+button.user-action{padding:5px 8px;margin:2px;border-radius:5px;border:none;background:#ff0;color:#000;cursor:pointer;}
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<header>
+  <button onclick="showSection('sport')">Sport</button>
+  <button onclick="showSection('game')">Játék közben</button>
+  <button onclick="showSection('bets')">Fogadásaim</button>
+  <button onclick="showSection('about')">Rólunk</button>
+  <button id="admin-menu" onclick="showSection('admin')">Admin</button>
+</header>
+
+<div class="container" id="auth">
+<h2>🔐 REGISZTRÁCIÓ</h2>
+<input type="text" id="reg-username" placeholder="Felhasználónév">
+<input type="email" id="reg-email" placeholder="E-mail">
+<input type="password" id="reg-password" placeholder="Jelszó">
+<button class="action" id="btn-register">Regisztráció</button>
+
+<h2>🔑 BEJELENTKEZÉS</h2>
+<input type="text" id="login-username" placeholder="Felhasználónév">
+<input type="password" id="login-password" placeholder="Jelszó">
+<button class="action" id="btn-login">Bejelentkezés</button>
+
+<p id="auth-message"></p>
+</div>
+
+<div class="container" id="app" style="display:none;">
+<section id="sport">
+<h2>⚽ Ma meccsek</h2>
+<div id="matches">Betöltés...</div>
+<div id="detail"></div>
+</section>
+
+<section id="game">
+<h2>⏱️ Elő meccsek</h2>
+<div id="live-matches">Betöltés...</div>
+<div id="detail-live"></div>
+</section>
+
+<section id="bets">
+<h2>📝 Fogadásaim</h2>
+<p>Fejlesztés alatt ⚠️</p>
+</section>
+
+<section id="about">
+<h2>ℹ️ Rólunk</h2>
+<p>Szerkesztés alatt</p>
+</section>
+
+<section id="admin" style="display:none;">
+<h2>🛠️ Admin – Felhasználók</h2>
+<div id="user-list"></div>
+</section>
+</div>
+
+<script>
+// -------- REG/LOGIN --------
+let currentUser=null;
+function sanitize(str){return str.trim();}
+
+document.getElementById("btn-register").addEventListener("click",()=>{
+  const username=sanitize(document.getElementById("reg-username").value);
+  const email=sanitize(document.getElementById("reg-email").value);
+  const password=sanitize(document.getElementById("reg-password").value);
+  if(!username||!password||!email){
+    document.getElementById("auth-message").innerText="Adj meg minden adatot!";
+    return;
+  }
+  if(localStorage.getItem(`user_${username}`)){
+    document.getElementById("auth-message").innerText="Felhasználónév már létezik!";
+    return;
+  }
+  let role="admin";
+  for(let key in localStorage){if(key.startsWith("user_")){role="user";break;}}
+  const userData={email,password,role,banned:false};
+  localStorage.setItem(`user_${username}`,JSON.stringify(userData));
+  document.getElementById("auth-message").innerText=`Köszönjük, hogy minket választottál, ${username}! Most jelentkezz be.`;
+  document.getElementById("reg-username").value="";
+  document.getElementById("reg-email").value="";
+  document.getElementById("reg-password").value="";
+});
+
+document.getElementById("btn-login").addEventListener("click",()=>{
+  const username=sanitize(document.getElementById("login-username").value);
+  const password=sanitize(document.getElementById("login-password").value);
+  const saved=localStorage.getItem(`user_${username}`);
+  if(saved){
+    const userData=JSON.parse(saved);
+    if(userData.password===password){
+      if(userData.banned){document.getElementById("auth-message").innerText="Ez a felhasználó tiltva van!"; return;}
+      currentUser=username;
+      document.getElementById("auth-message").innerText=`Sikeresen bejelentkeztél, ${username} (${userData.role})!`;
+      document.getElementById("auth").style.display="none";
+      document.getElementById("app").style.display="block";
+      const adminMenu=document.getElementById("admin-menu");
+      if(userData.role==="admin"){adminMenu.style.display="inline-block"; renderUsers();}
+      else{adminMenu.style.display="none";}
+      showSection('sport');
+      loadTodayMatches();
+      loadLiveMatches();
+      return;
+    }
+  }
+  document.getElementById("auth-message").innerText="Hibás felhasználónév vagy jelszó!";
+});
+
+// -------- MENÜ --------
+function showSection(section){
+  const sections=['sport','game','bets','about','admin'];
+  sections.forEach(s=>{document.getElementById(s).style.display=(s===section)?'block':'none';});
+}
+
+// -------- ADMIN --------
+function renderUsers(){
+  const list=document.getElementById("user-list");
+  list.innerHTML="";
+  for(let key in localStorage){
+    if(!key.startsWith("user_")) continue;
+    const username=key.replace("user_","");
+    const user=JSON.parse(localStorage.getItem(key));
+    const div=document.createElement("div");
+    div.style.padding="10px";
+    div.style.marginBottom="8px";
+    div.style.borderRadius="10px";
+    div.style.background="rgba(255,255,255,0.05)";
+    div.innerHTML=`
+      <b>${username}</b> (${user.role})<br>
+      Email: ${user.email}<br>
+      Státusz: ${user.banned ? "🚫 Tiltva" : "✅ Aktív"}<br><br>
+      <button class="user-action" onclick="toggleBan('${username}')">${user.banned?"Feloldás":"Tiltás"}</button>
+      <button class="user-action" style="background:red;color:white;" onclick="deleteUser('${username}')">Törlés</button>
+    `;
+    list.appendChild(div);
+  }
+}
+function toggleBan(username){
+  const key=`user_${username}`;
+  const user=JSON.parse(localStorage.getItem(key));
+  user.banned=!user.banned;
+  localStorage.setItem(key,JSON.stringify(user));
+  renderUsers();
+}
+function deleteUser(username){
+  if(!confirm("Biztos törlöd ezt a felhasználót?")) return;
+  localStorage.removeItem(`user_${username}`);
+  renderUsers();
+}
+
+// -------- API HÍVÁS --------
+async function loadTodayMatches(){
+  try{
+    const res = await fetch('/api/matches/today');
+    const data = await res.json();
+    const matchesDiv=document.getElementById("matches");
+    matchesDiv.innerHTML="";
+    data.forEach(ev=>{
+      const div=document.createElement("div");
+      div.className="match";
+      div.innerHTML=`${ev.teams.home.name} vs ${ev.teams.away.name} - ${new Date(ev.fixture.date).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
+      div.onclick=()=>{document.getElementById("detail").innerHTML=`<b>${ev.teams.home.name} vs ${ev.teams.away.name}</b><br>League: ${ev.league.name}<br>Date: ${ev.fixture.date}`;}
+      matchesDiv.appendChild(div);
+    });
+  }catch(e){document.getElementById("matches").innerHTML="<p>Hiba a meccsek betöltésénél.</p>";}
+}
+
+async function loadLiveMatches(){
+  try{
+    const res = await fetch('/api/matches/live');
+    const data = await res.json();
+    const liveDiv=document.getElementById("live-matches");
+    liveDiv.innerHTML="";
+    data.forEach(ev=>{
+      const div=document.createElement("div");
+      div.className="live-match";
+      div.innerHTML=`<span class="live">ELŐ</span> ${ev.teams.home.name} vs ${ev.teams.away.name} - ${new Date(ev.fixture.date).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
+      div.onclick=()=>{document.getElementById("detail-live").innerHTML=`<b>${ev.teams.home.name} vs ${ev.teams.away.name}</b><br>League: ${ev.league.name}<br>Date: ${ev.fixture.date}`;}
+      liveDiv.appendChild(div);
+    });
+  }catch(e){document.getElementById("live-matches").innerHTML="<p>Hiba az elő meccsek betöltésénél.</p>";}
+}
+</script>
+</body>
+</html>
