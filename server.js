@@ -1,9 +1,9 @@
 const express = require('express');
+const fetch = require('node-fetch'); // ⚠️ FONTOS
 const cors = require('cors');
 
 const app = express();
 app.use(cors());
-app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
 const API_KEY = process.env.API_KEY;
@@ -14,9 +14,7 @@ app.get('/api/matches/today', async (req, res) => {
     const today = new Date().toISOString().split('T')[0];
 
     const response = await fetch(`${API_URL}?date=${today}`, {
-      headers: {
-        'x-apisports-key': API_KEY
-      }
+      headers: { 'x-apisports-key': API_KEY }
     });
 
     const data = await response.json();
@@ -30,6 +28,4 @@ app.get('/', (req, res) => {
   res.send('API RUNNING');
 });
 
-app.listen(PORT, () => {
-  console.log('Server running on port', PORT);
-});
+app.listen(PORT, () => console.log('Server running'));
